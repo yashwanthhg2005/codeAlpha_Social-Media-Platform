@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header></header>
+
+  <!-- Main Content Grid -->
+  <main class="container">
+    <div class="main-layout">
+      
+      <!-- Left Sidebar (Navigation Card) -->
+      <aside class="left-sidebar">
+        <!-- Sidebar Navigation List -->
+        <div class="sidebar-card" style="padding: 10px;">
+          <ul class="sidebar-nav-list">
+            <li class="sidebar-nav-item">
+              <a href="./index.html"><i class="fas fa-home"></i> Home Feed</a>
+            </li>
+            <li class="sidebar-nav-item">
+              <a href="./explore.html"><i class="fas fa-compass"></i> Explore</a>
+            </li>
+            <li class="sidebar-nav-item active">
+              <a href="./notifications.html"><i class="fas fa-bell"></i> Notifications</a>
+            </li>
+            <li class="sidebar-nav-item" id="side-nav-profile-link">
+              <a href=""><i class="fas fa-user"></i> My Profile</a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Central Notifications Container -->
+      <section class="feed-content">
+        <div class="notification-card">
+          <div class="notification-header-row">
+            <h3 class="notification-header-title">Notifications</h3>
+            <button class="btn-clear-notifications" id="btn-clear-all"><i class="fas fa-trash-sweep"></i> Clear All</button>
+          </div>
+
+          <!-- Dynamic notifications list -->
+          <div class="notifications-list" id="notif-list-container"></div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar (Tips / Notice) -->
+      <aside class="right-sidebar">
+        <div class="sidebar-card">
+          <h3 class="widget-title">Notifications Tips</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            When another user likes your post, comments, or follows you, a notification record is generated automatically in localStorage.
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script>
+    // Route guard: must be authenticated
+    const currentUser = window.ConnectlyAuth.checkAuth();
+
+    if (currentUser) {
+      const db = window.ConnectlyDB;
+
+      // Update my profile sidebar URL
+      document.querySelector("#side-nav-profile-link a").href = `./profile.html?username=${currentUser.username}`;
+
+      // Function to render notifications list
+      const renderNotifications = () => {
+        const listContainer = document.getElementById("notif-list-container");
+        const notifications = db.getNotifications() || [];
+        const users = db.getUsers() || [];
+        const posts = db.getPosts() || [];
+        
+        // Filter notifications for current user, sort by date descending
+        const userNotifs = notifications
+          .filter(n => n.recipientId === currentUser.id)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (userNotifs.length === 0) {
+          listContainer.innerHTML = `
+            <div class="empty-state" style="border: none;">
+              <i class="far fa-bell-slash empty-state-icon"></i>
+              <h3 class="empty-state-title">No notifications yet</h3>
+              <p class="empty-state-text">You're all caught up! When users interact with you, updates show here.</p>
+            </div>
+          `;
+          return;
+        }
+
+        listContainer.innerHTML = userNotifs.map(notif => {
+          const sender = users.find(u => u.id === notif.senderId) || { name: "Someone", username: "user", avatar: "" };
+          let badgeClass = "notif-like-icon";
+          let badgeIcon = "fa-heart";
+          let messageHtml = "";
+          let linkUrl = "";
+          let postPreviewHtml = "";
+
+          if (notif.type === "like") {
+            badgeClass = "notif-like-icon";
+            badgeIcon = "fa-heart";
+            messageHtml = `<strong>${sender.name}</strong> liked your post`;
+            linkUrl = `./post.html?id=${notif.postId}`;
+            
+            // Post preview
+            const postObj = posts.find(p => p.id === notif.postId);
+            if (postObj && postObj.image) {
+              postPreviewHtml = `<img src="${postObj.image}" class="notification-post-preview-img" alt="Post preview">`;
+            }
+          } else if (notif.type === "comment") {
+            badgeClass = "notif-comment-icon";
+            badgeIcon = "fa-comment";
+            messageHtml = `<strong>${sender.name}</strong> commented on your post: <span style="color: var(--text-secondary); font-style: italic;">"${window.Connectly.escapeHTML(notif.commentText)}"</span>`;
+            linkUrl = `./post.html?id=${notif.postId}`;
+            
+            const postObj = posts.find(p => p.id === notif.postId);
+            if (postObj && postObj.image) {
+              postPreviewHtml = `<img src="${postObj.image}" class="notification-post-preview-img" alt="Post preview">`;
+            }
+          } else if (notif.type === "follow") {
+            badgeClass = "notif-follow-icon";
+            badgeIcon = "fa-user-plus";
+            messageHtml = `<strong>${sender.name}</strong> started following you.`;
+            linkUrl = `./profile.html?username=${sender.username}`;
+          }
+
+          return `
+            <div class="notification-item ${notif.isRead ? '' : 'unread'}" onclick="handleNotifClick('${notif.id}', '${linkUrl}')" style="cursor: pointer;">
+              <div class="notification-item-left">
+                <!-- Icon badge -->
+                <div class="notification-icon-badge ${badgeClass}">
+                  <i class="fas ${badgeIcon}"></i>
+                </div>
+                
+                <!-- Sender Info -->
+                <div class="notification-content-wrapper">
+                  <img src="${sender.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}" alt="${sender.name}">
+                  <div class="notification-text-details">
+                    <span class="notification-message-text">${messageHtml}</span>
+                    <span class="notification-timestamp">${window.Connectly.formatRelativeTime(notif.date)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="notification-item-right">
+                ${postPreviewHtml}
+              </div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      // Handle notification click: mark as read and navigate
+      window.handleNotifClick = (notifId, url) => {
+        const notifications = db.getNotifications() || [];
+        const updated = notifications.map(n => n.id === notifId ? { ...n, isRead: true } : n);
+        db.saveNotifications(updated);
+        
+        // Remove badge or decrement count immediately
+        const badge = document.getElementById("nav-notif-badge");
+        if (badge) {
+          const count = parseInt(badge.textContent) - 1;
+          if (count > 0) {
+            badge.textContent = count;
+          } else {
+            badge.remove();
+          }
+        }
+        
+        window.location.href = url;
+      };
+
+      // Mark all as read upon opening
+      const markAllAsRead = () => {
+        const notifications = db.getNotifications() || [];
+        const updated = notifications.map(n => n.recipientId === currentUser.id ? { ...n, isRead: true } : n);
+        db.saveNotifications(updated);
+        
+        // Clear navbar badge
+        const badge = document.getElementById("nav-notif-badge");
+        if (badge) badge.remove();
+      };
+
+      // Clear all notifications
+      document.getElementById("btn-clear-all").addEventListener("click", () => {
+        const notifications = db.getNotifications() || [];
+        // Keep notifications belonging to other users
+        const remaining = notifications.filter(n => n.recipientId !== currentUser.id);
+        db.saveNotifications(remaining);
+        
+        window.Connectly.showToast("Notifications cleared!", "success");
+        renderNotifications();
+        
+        const badge = document.getElementById("nav-notif-badge");
+        if (badge) badge.remove();
+      });
+
+      // Execute render
+      renderNotifications();
+      // Wait briefly before marking read to let user see highlights
+      setTimeout(markAllAsRead, 1000);
+    }
+  </script>
+</body>
+</html>

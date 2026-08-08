@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="auth-page-wrapper">
+
+  <div class="auth-card" style="margin: 20px 0;">
+    <div class="auth-header">
+      <div class="logo-text">Connectly</div>
+      <p class="auth-subtitle">Create a new account and join our community.</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form class="auth-form" id="register-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <div class="input-with-icon">
+          <i class="fas fa-user"></i>
+          <input type="text" id="name" placeholder="John Doe" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-with-icon">
+          <i class="fas fa-at"></i>
+          <input type="text" id="username" placeholder="johndoe" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-with-icon">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="email" placeholder="john@example.com" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-with-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="•••••••• (min 6 characters)" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirm Password</label>
+        <div class="input-with-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="confirm-password" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="avatar">Profile Image URL (Optional)</label>
+        <div class="input-with-icon">
+          <i class="fas fa-image"></i>
+          <input type="url" id="avatar" placeholder="https://unsplash.com/... (optional)">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Create Account</button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="./login.html">Login</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script>
+    // Guest guard
+    window.ConnectlyAuth.checkGuest();
+
+    document.getElementById("register-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirm-password").value;
+      const avatar = document.getElementById("avatar").value;
+      
+      const success = window.ConnectlyAuth.register(name, username, email, password, confirmPassword, avatar);
+      if (success) {
+        setTimeout(() => {
+          window.location.href = "./index.html";
+        }, 1200);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="auth-page-wrapper">
+
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="logo-text">Connectly</div>
+      <p class="auth-subtitle">Connect. Share. Discover.</p>
+    </div>
+
+    <!-- Login Form -->
+    <form class="auth-form" id="login-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-with-icon">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="email" placeholder="email@example.com" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-with-icon">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Login</button>
+    </form>
+
+    <!-- Demo Credentials Notice -->
+    <div class="demo-credentials-box">
+      <h4>Demo Credentials</h4>
+      <p>Email: <code>demo@connectly.com</code></p>
+      <p>Password: <code>123456</code></p>
+    </div>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="./register.html">Create Account</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script>
+    // Guest guard: if logged in, redirect to feed
+    window.ConnectlyAuth.checkGuest();
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      
+      const success = window.ConnectlyAuth.login(email, password);
+      if (success) {
+        setTimeout(() => {
+          window.location.href = "./index.html";
+        }, 1200);
+      }
+    });
+  </script>
+</body>
+</html>

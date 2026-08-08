@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post Details - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header></header>
+
+  <!-- Main Content Grid -->
+  <main class="container">
+    <div class="main-layout">
+      
+      <!-- Left Sidebar (Navigation Card) -->
+      <aside class="left-sidebar">
+        <!-- Sidebar Navigation List -->
+        <div class="sidebar-card" style="padding: 10px;">
+          <ul class="sidebar-nav-list">
+            <li class="sidebar-nav-item">
+              <a href="./index.html"><i class="fas fa-home"></i> Home Feed</a>
+            </li>
+            <li class="sidebar-nav-item">
+              <a href="./explore.html"><i class="fas fa-compass"></i> Explore</a>
+            </li>
+            <li class="sidebar-nav-item">
+              <a href="./notifications.html"><i class="fas fa-bell"></i> Notifications</a>
+            </li>
+            <li class="sidebar-nav-item" id="side-nav-profile-link">
+              <a href=""><i class="fas fa-user"></i> My Profile</a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Central Post Details & Comments Section -->
+      <section class="feed-content" id="post-detail-root">
+        <!-- Main post card wrapper -->
+        <div class="feed-content" id="detail-post-card-container"></div>
+        
+        <!-- Comments thread card -->
+        <div class="detail-comments-section">
+          <h3 class="detail-comments-title">Comments (<span id="details-comment-count">0</span>)</h3>
+          
+          <!-- Comment entry form -->
+          <form class="comment-form" id="detail-comment-form">
+            <img src="" id="form-commenter-avatar" alt="Avatar">
+            <div class="comment-form-input-container">
+              <input type="text" id="detail-comment-input" placeholder="Write a comment..." required>
+              <button type="submit" class="btn-post-comment" id="btn-submit-comment">Post</button>
+            </div>
+          </form>
+
+          <!-- List of Comments -->
+          <div class="detail-comments-list" id="detail-comments-list-container"></div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar (Suggested creators / widget) -->
+      <aside class="right-sidebar">
+        <!-- Simple Info card -->
+        <div class="sidebar-card">
+          <h3 class="widget-title">Connectly Notice</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            This details page is dynamically generated from LocalStorage database rows. Type a comment or click Like to test the reactive updates!
+          </p>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/posts.js"></script>
+  <script src="./js/comments.js"></script>
+  <script>
+    // Route guard: must be authenticated
+    const currentUser = window.ConnectlyAuth.checkAuth();
+
+    if (currentUser) {
+      const db = window.ConnectlyDB;
+      
+      // Update my profile sidebar URL
+      document.querySelector("#side-nav-profile-link a").href = `./profile.html?username=${currentUser.username}`;
+      
+      // Populate commenter avatar
+      document.getElementById("form-commenter-avatar").src = currentUser.avatar;
+
+      // 1. Load targeted Post from query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get("id");
+      
+      const allPosts = db.getPosts() || [];
+      const post = allPosts.find(p => p.id === postId);
+
+      if (!post) {
+        // Show post not found
+        document.getElementById("post-detail-root").innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-triangle empty-state-icon"></i>
+            <h3 class="empty-state-title">Post Not Found</h3>
+            <p class="empty-state-text">This post may have been deleted by the author or does not exist.</p>
+            <a href="./index.html" class="btn-primary" style="margin-top: 16px;">Back to Feed</a>
+          </div>
+        `;
+      } else {
+        // 2. Render Single Post Card (wrapped inside a list structure for compatibility)
+        window.ConnectlyPosts.renderFeed([post], "detail-post-card-container");
+        
+        // 3. Render associated comments
+        window.ConnectlyComments.renderComments(postId, "detail-comments-list-container");
+        
+        // Populate initial count
+        const allComments = db.getComments() || [];
+        const count = allComments.filter(c => c.postId === postId).length;
+        document.getElementById("details-comment-count").textContent = count;
+
+        // 4. Handle comment form submission
+        document.getElementById("detail-comment-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const input = document.getElementById("detail-comment-input");
+          const text = input.value;
+          
+          const success = window.ConnectlyComments.addComment(postId, text, "detail-comments-list-container");
+          if (success) {
+            input.value = ""; // Clear input
+            
+            // Re-render feed card to update comments counts on feed card itself
+            const freshPosts = db.getPosts() || [];
+            const freshPost = freshPosts.find(p => p.id === postId);
+            window.ConnectlyPosts.renderFeed([freshPost], "detail-post-card-container");
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

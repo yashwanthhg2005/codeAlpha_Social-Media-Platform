@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header></header>
+
+  <!-- Content Container -->
+  <main class="container" style="padding-top: 24px; padding-bottom: 45px;">
+    
+    <div class="profile-container" id="profile-root">
+      
+      <!-- Top profile details card -->
+      <div class="profile-card">
+        <!-- Banner -->
+        <div class="profile-banner-wrapper">
+          <img src="" id="profile-banner" class="profile-banner" alt="Banner">
+        </div>
+        
+        <!-- Info details row -->
+        <div class="profile-info-row">
+          <div class="profile-main-left">
+            <div class="profile-avatar-wrapper">
+              <img src="" id="profile-avatar" class="profile-avatar" alt="Avatar">
+            </div>
+            
+            <div class="profile-details-column">
+              <h2 class="profile-name" id="profile-name">Loading User...</h2>
+              <span class="profile-username" id="profile-username">@username</span>
+              
+              <!-- Location / Link tags -->
+              <div class="profile-meta-chips" id="profile-meta-chips"></div>
+              
+              <!-- Bio -->
+              <p class="profile-bio" id="profile-bio"></p>
+            </div>
+          </div>
+          
+          <div class="profile-main-right">
+            <!-- Edit / Follow buttons wrapper -->
+            <div class="profile-action-btn-row" id="profile-action-container"></div>
+            
+            <!-- Followers / Posts statistics chips -->
+            <div class="profile-stats-grid">
+              <div class="profile-stat-box">
+                <span class="profile-stat-number" id="profile-stat-posts">0</span>
+                <span class="profile-stat-label">Posts</span>
+              </div>
+              <div class="profile-stat-box" style="border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0 16px;">
+                <span class="profile-stat-number" id="profile-stat-followers">0</span>
+                <span class="profile-stat-label">Followers</span>
+              </div>
+              <div class="profile-stat-box">
+                <span class="profile-stat-number" id="profile-stat-following">0</span>
+                <span class="profile-stat-label">Following</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User posts view selection tab buttons -->
+      <div class="profile-content-layout">
+        <div class="profile-tabs-header">
+          <button class="profile-tab-btn active" id="tab-grid-btn"><i class="fas fa-th"></i> Grid View</button>
+          <button class="profile-tab-btn" id="tab-feed-btn"><i class="fas fa-list"></i> Feed View</button>
+        </div>
+
+        <!-- Render posts in grid layout by default -->
+        <div class="post-grid" id="profile-posts-grid"></div>
+
+        <!-- Render posts in feed layout, hidden initially -->
+        <div class="feed-content" id="profile-posts-list" style="display: none;"></div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- EDIT PROFILE MODAL DIALOG -->
+  <div class="modal-overlay" id="edit-profile-modal">
+    <div class="modal-content-box">
+      <div class="modal-header">Edit Profile</div>
+      
+      <form id="edit-profile-form" class="auth-form">
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="edit-name">Full Name</label>
+          <div class="input-with-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" id="edit-name" required>
+          </div>
+        </div>
+
+        <!-- Username -->
+        <div class="form-group">
+          <label for="edit-username">Username</label>
+          <div class="input-with-icon">
+            <i class="fas fa-at"></i>
+            <input type="text" id="edit-username" required>
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div class="form-group">
+          <label for="edit-bio">Bio</label>
+          <div class="input-with-icon">
+            <i class="far fa-id-card"></i>
+            <input type="text" id="edit-bio" placeholder="Tell us about yourself...">
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+          <label for="edit-location">Location</label>
+          <div class="input-with-icon">
+            <i class="fas fa-map-marker-alt"></i>
+            <input type="text" id="edit-location" placeholder="City, Country">
+          </div>
+        </div>
+
+        <!-- Website -->
+        <div class="form-group">
+          <label for="edit-website">Website Link</label>
+          <div class="input-with-icon">
+            <i class="fas fa-link"></i>
+            <input type="url" id="edit-website" placeholder="https://example.com">
+          </div>
+        </div>
+
+        <!-- Avatar Image URL -->
+        <div class="form-group">
+          <label for="edit-avatar">Profile Image URL</label>
+          <div class="input-with-icon">
+            <i class="fas fa-image"></i>
+            <input type="url" id="edit-avatar">
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="modal-footer">
+          <button type="button" class="btn-text" id="btn-edit-cancel">Cancel</button>
+          <button type="submit" class="btn-primary" style="padding: 8px 20px;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/posts.js"></script>
+  <script src="./js/profile.js"></script>
+  <script>
+    // Route guard: must be authenticated
+    const currentUser = window.ConnectlyAuth.checkAuth();
+
+    if (currentUser) {
+      // Initialize profile details and layouts
+      window.ConnectlyProfile.initProfilePage();
+
+      // Tab switcher handlers
+      const gridBtn = document.getElementById("tab-grid-btn");
+      const feedBtn = document.getElementById("tab-feed-btn");
+      const gridLayout = document.getElementById("profile-posts-grid");
+      const feedLayout = document.getElementById("profile-posts-list");
+
+      gridBtn.addEventListener("click", () => {
+        gridBtn.classList.add("active");
+        feedBtn.classList.remove("active");
+        
+        gridLayout.style.display = "grid";
+        feedLayout.style.display = "none";
+      });
+
+      feedBtn.addEventListener("click", () => {
+        feedBtn.classList.add("active");
+        gridBtn.classList.remove("active");
+        
+        feedLayout.style.display = "flex";
+        gridLayout.style.display = "none";
+      });
+    }
+  </script>
+</body>
+</html>

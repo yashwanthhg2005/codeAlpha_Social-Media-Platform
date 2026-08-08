@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header></header>
+
+  <!-- Main Content Grid -->
+  <main class="container">
+    <div class="main-layout">
+      
+      <!-- Left Sidebar (Navigation Card) -->
+      <aside class="left-sidebar">
+        <!-- Sidebar Navigation List -->
+        <div class="sidebar-card" style="padding: 10px;">
+          <ul class="sidebar-nav-list">
+            <li class="sidebar-nav-item">
+              <a href="./index.html"><i class="fas fa-home"></i> Home Feed</a>
+            </li>
+            <li class="sidebar-nav-item active">
+              <a href="./explore.html"><i class="fas fa-compass"></i> Explore</a>
+            </li>
+            <li class="sidebar-nav-item">
+              <a href="./notifications.html"><i class="fas fa-bell"></i> Notifications</a>
+            </li>
+            <li class="sidebar-nav-item" id="side-nav-profile-link">
+              <a href=""><i class="fas fa-user"></i> My Profile</a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Central Explore Area -->
+      <section class="feed-content">
+        <!-- Categories filter box -->
+        <div class="sidebar-card explore-categories-card">
+          <h3 class="widget-title" style="margin-bottom: 12px; border-bottom: none; padding-bottom: 0;">Explore Categories</h3>
+          <div class="categories-container" id="explore-categories-container">
+            <div class="category-chip-box active" data-category="All">All Topics</div>
+            <div class="category-chip-box" data-category="Technology">Technology</div>
+            <div class="category-chip-box" data-category="Travel">Travel</div>
+            <div class="category-chip-box" data-category="Design">Design</div>
+            <div class="category-chip-box" data-category="Health & Fitness">Health & Fit</div>
+            <div class="category-chip-box" data-category="Lifestyle">Lifestyle</div>
+            <div class="category-chip-box" data-category="Music">Music</div>
+            <div class="category-chip-box" data-category="Business">Business</div>
+          </div>
+        </div>
+
+        <!-- Explore Posts dynamic list -->
+        <h3 id="explore-feed-title" style="font-size: 1.15rem; font-weight: 700; margin-top: 8px;">Trending Posts</h3>
+        <div class="feed-content" id="explore-posts-container"></div>
+      </section>
+
+      <!-- Right Sidebar (Popular / Suggested Users) -->
+      <aside class="right-sidebar">
+        <!-- Popular Users sorted by followers count -->
+        <div class="sidebar-card">
+          <h3 class="widget-title">Popular Creators</h3>
+          <div class="suggestion-list" id="popular-creators-container"></div>
+        </div>
+
+        <!-- Suggested Users widget -->
+        <div class="sidebar-card">
+          <h3 class="widget-title">Suggested For You</h3>
+          <div class="suggestion-list" id="suggested-users-container"></div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/posts.js"></script>
+  <script>
+    // Route guard: must be authenticated
+    const currentUser = window.ConnectlyAuth.checkAuth();
+
+    if (currentUser) {
+      const db = window.ConnectlyDB;
+      const allUsers = db.getUsers() || [];
+      const allPosts = db.getPosts() || [];
+      const followers = db.getFollowers() || [];
+
+      // Update my profile sidebar URL
+      document.querySelector("#side-nav-profile-link a").href = `./profile.html?username=${currentUser.username}`;
+
+      // 1. Check if category in query parameters (e.g. explore.html?category=Travel)
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryCategory = urlParams.get("category");
+      
+      let activeCategory = queryCategory || "All";
+
+      // Function to render the explore feed posts
+      const loadExplorePosts = (cat) => {
+        const titleElement = document.getElementById("explore-feed-title");
+        if (cat === "All") {
+          titleElement.textContent = "Trending Posts";
+          window.ConnectlyPosts.renderFeed(allPosts, "explore-posts-container");
+        } else {
+          titleElement.textContent = `Trending in ${cat}`;
+          window.ConnectlyPosts.renderFeed(allPosts, "explore-posts-container", cat);
+        }
+      };
+
+      // Set active category chip class
+      const chips = document.querySelectorAll(".category-chip-box");
+      chips.forEach(chip => {
+        const cat = chip.getAttribute("data-category");
+        if (cat === activeCategory) {
+          chip.classList.add("active");
+        } else {
+          chip.classList.remove("active");
+        }
+
+        chip.addEventListener("click", () => {
+          chips.forEach(c => c.classList.remove("active"));
+          chip.classList.add("active");
+          activeCategory = cat;
+          
+          // Replace URL query params dynamically
+          if (cat === "All") {
+            window.history.replaceState({}, "", "./explore.html");
+          } else {
+            window.history.replaceState({}, "", `./explore.html?category=${cat}`);
+          }
+          
+          loadExplorePosts(cat);
+        });
+      });
+
+      // Initial feed load
+      loadExplorePosts(activeCategory);
+
+      // 2. Render Popular Creators (Sorted by followers count)
+      const renderPopularCreators = () => {
+        const popularContainer = document.getElementById("popular-creators-container");
+        
+        // Map users with follower count
+        const usersWithFollowers = allUsers.map(user => {
+          const count = followers.filter(f => f.followingId === user.id).length;
+          return { ...user, followerCount: count };
+        });
+
+        // Sort by follower count descending
+        const sortedUsers = usersWithFollowers
+          .filter(u => u.id !== currentUser.id)
+          .sort((a, b) => b.followerCount - a.followerCount);
+
+        popularContainer.innerHTML = sortedUsers.slice(0, 4).map(user => {
+          const isFollowing = followers.some(f => f.followerId === currentUser.id && f.followingId === user.id);
+          return `
+            <div class="suggestion-item">
+              <a href="./profile.html?username=${user.username}" class="user-snippet">
+                <img src="${user.avatar}" alt="${user.name}">
+                <div class="user-snippet-info">
+                  <span class="user-snippet-name">${user.name}</span>
+                  <span class="user-snippet-handle">${user.followerCount} followers</span>
+                </div>
+              </a>
+              <button class="btn-follow-sm btn-popular-follow ${isFollowing ? 'following' : ''}" data-author-id="${user.id}">
+                ${isFollowing ? 'Following' : 'Follow'}
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        // Bind clicks
+        popularContainer.querySelectorAll(".btn-popular-follow").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const authorId = btn.getAttribute("data-author-id");
+            window.ConnectlyPosts.toggleFollow(authorId, btn);
+            // Refresh creators widget to update counts
+            setTimeout(renderPopularCreators, 200);
+          });
+        });
+      };
+
+      renderPopularCreators();
+
+      // 3. Render Suggested For You (Users not followed yet)
+      const renderSuggestedUsers = () => {
+        const suggestContainer = document.getElementById("suggested-users-container");
+        
+        const followedIds = followers
+          .filter(f => f.followerId === currentUser.id)
+          .map(f => f.followingId);
+
+        const suggestedList = allUsers.filter(u => u.id !== currentUser.id && !followedIds.includes(u.id));
+
+        if (suggestedList.length === 0) {
+          suggestContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-secondary);">No suggestions found</p>`;
+          return;
+        }
+
+        suggestContainer.innerHTML = suggestedList.slice(0, 4).map(user => `
+          <div class="suggestion-item">
+            <a href="./profile.html?username=${user.username}" class="user-snippet">
+              <img src="${user.avatar}" alt="${user.name}">
+              <div class="user-snippet-info">
+                <span class="user-snippet-name">${user.name}</span>
+                <span class="user-snippet-handle">@${user.username}</span>
+              </div>
+            </a>
+            <button class="btn-follow-sm btn-suggest-follow" data-author-id="${user.id}">Follow</button>
+          </div>
+        `).join("");
+
+        // Bind clicks
+        suggestContainer.querySelectorAll(".btn-suggest-follow").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const authorId = btn.getAttribute("data-author-id");
+            window.ConnectlyPosts.toggleFollow(authorId, btn);
+            // Re-draw suggestions list & creators widget
+            setTimeout(() => {
+              renderSuggestedUsers();
+              renderPopularCreators();
+            }, 200);
+          });
+        });
+      };
+
+      renderSuggestedUsers();
+    }
+  </script>
+</body>
+</html>

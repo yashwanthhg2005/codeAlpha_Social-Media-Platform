@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post - Connectly</title>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header></header>
+
+  <!-- Content Container -->
+  <main class="container" style="padding-top: 40px; padding-bottom: 40px;">
+    
+    <div class="create-post-card">
+      <div class="create-post-header">
+        <i class="fas fa-edit" style="color: var(--accent);"></i>
+        <h3>Create a New Post</h3>
+      </div>
+
+      <!-- Create Post Form -->
+      <form id="create-post-form" class="auth-form">
+        
+        <!-- Post Text -->
+        <div class="form-group">
+          <label for="post-text">What's on your mind?</label>
+          <div class="input-with-icon" style="align-items: flex-start;">
+            <i class="far fa-comment-dots" style="top: 14px;"></i>
+            <textarea id="post-text" rows="5" placeholder="Share your thoughts, tips, or news with the Connectly community..." style="resize: vertical; padding-left: 40px; width:100%; border-radius: var(--radius-md); border:1.5px solid var(--border-color); background-color:var(--bg-primary); color:var(--text-primary); font-size:0.95rem; font-family:inherit;" required></textarea>
+          </div>
+        </div>
+
+        <!-- Image URL -->
+        <div class="form-group">
+          <label for="post-image-url">Image Attachment URL (Optional)</label>
+          <div class="input-with-icon">
+            <i class="far fa-image"></i>
+            <input type="url" id="post-image-url" placeholder="https://example.com/photo.jpg">
+          </div>
+        </div>
+
+        <!-- Category Select -->
+        <div class="form-group">
+          <label for="post-category">Category</label>
+          <div class="input-with-icon">
+            <i class="fas fa-tags"></i>
+            <select id="post-category" required>
+              <option value="" disabled selected>Select a Category...</option>
+              <option value="Technology">Technology</option>
+              <option value="Travel">Travel</option>
+              <option value="Design">Design</option>
+              <option value="Health & Fitness">Health & Fitness</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Music">Music</option>
+              <option value="Business">Business</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Image preview block -->
+        <div id="post-preview-container" style="display: none; border-radius: var(--radius-md); overflow: hidden; max-height: 250px; background-color: var(--bg-input); border: 1px solid var(--border-color);">
+          <img id="post-preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment preview">
+        </div>
+
+        <!-- Action buttons -->
+        <div class="form-actions">
+          <button type="button" class="btn-text" id="btn-cancel-post">Cancel</button>
+          <button type="submit" class="btn-primary" style="padding: 10px 24px;">Publish Post</button>
+        </div>
+
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/main.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/posts.js"></script>
+  <script>
+    // Route guard: must be authenticated
+    const currentUser = window.ConnectlyAuth.checkAuth();
+
+    if (currentUser) {
+      // Check for image query param (e.g. from the quick photo click on feed)
+      const params = new URLSearchParams(window.location.search);
+      const isImageType = params.get("type") === "image";
+      if (isImageType) {
+        document.getElementById("post-image-url").focus();
+      }
+
+      // Live image preview logic
+      const imageUrlInput = document.getElementById("post-image-url");
+      const previewContainer = document.getElementById("post-preview-container");
+      const previewImg = document.getElementById("post-preview-img");
+
+      imageUrlInput.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          previewImg.src = val;
+          previewContainer.style.display = "block";
+        } else {
+          previewContainer.style.display = "none";
+          previewImg.src = "";
+        }
+      });
+
+      // Handle form submission
+      document.getElementById("create-post-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        const text = document.getElementById("post-text").value;
+        const imageUrl = imageUrlInput.value;
+        const category = document.getElementById("post-category").value;
+
+        const success = window.ConnectlyPosts.createPost(text, imageUrl, category);
+        if (success) {
+          setTimeout(() => {
+            window.location.href = "./index.html";
+          }, 1200);
+        }
+      });
+
+      // Handle cancel
+      document.getElementById("btn-cancel-post").addEventListener("click", () => {
+        window.location.href = "./index.html";
+      });
+    }
+  </script>
+</body>
+</html>
